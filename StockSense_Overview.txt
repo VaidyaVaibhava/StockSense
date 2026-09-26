@@ -1,0 +1,137 @@
+==================================================================
+STOCKSENSE - PRODUCT OVERVIEW
+Autonomous Inventory Management System, powered by the Mastra
+Agentic Framework
+Derived from: StockSense PRD v3.0 (Ready for Development)
+Date: September 26, 2026
+==================================================================
+
+WHAT IT IS
+----------
+StockSense is a modular, real-time Inventory Management System (IMS)
+that replaces manual paper registers, spreadsheets, and reactive
+stock tracking with a centralized platform. Mastra-powered AI agents
+turn it from a passive tracker into an autonomous supply-chain
+assistant: document ingestion, predictive reordering, anomaly
+detection, demand forecasting, and natural-language warehouse
+operations.
+
+PROBLEM IT SOLVES
+------------------
+- Manual/spreadsheet stock registers cause data lag, stockouts, and
+  overstocking.
+- Vendor delivery paperwork is re-typed by hand, introducing errors.
+- Reordering is reactive, triggered only after a shortage appears.
+- Shrinkage and count discrepancies surface too late.
+- Warehouse staff lack a hands-free, mobile-first interface.
+
+CORE OBJECTIVES
+----------------
+- Eliminate stockouts/overstocking via AI-driven, lead-time-aware
+  reordering.
+- Cut manual data entry through automated receipt parsing.
+- Provide role-based workflows for Inventory Managers, Warehouse
+  Staff, and Procurement/Admins.
+- Stay offline-resilient with sync-on-reconnect.
+- Give live, role-scoped analytics instead of static reports.
+- Improve forecasting/anomaly detection via a manager feedback loop.
+
+WHO USES IT (PERSONAS)
+------------------------
+1. Inventory Manager      - sets reorder points, approves AI-drafted
+                             POs, tracks KPIs and valuations.
+2. Warehouse Staff        - receives goods, packs orders, does
+                             transfers and stock counts; needs a
+                             mobile, hands-free, gloves-friendly UI.
+3. Procurement/Admin      - owns supplier relationships, lead-time
+                             data, and user provisioning; new persona
+                             added because reorder accuracy depends on
+                             supplier data quality.
+
+HOW IT'S BUILT
+----------------
+Frontend         : Next.js (React) + Tailwind CSS
+Backend          : FastAPI (Python) or Node.js/TypeScript
+Database         : PostgreSQL (Docker/Supabase) via Prisma or SQLAlchemy
+Real-time Layer  : PostgreSQL LISTEN/NOTIFY or Supabase Realtime
+AI Orchestration : Mastra SDK - agents, memory, workflows, tool-calling,
+                   scoped per warehouse
+Offline Cache    : SQLite (mobile) or service-worker cache (web)
+Auth             : JWT + refresh tokens, OTP via email/SMS
+
+WHAT IT DOES (FUNCTIONAL AREAS)
+----------------------------------
+- Authentication & user management (invite-only, OTP reset, RBAC
+  routing) - fully specified screen-by-screen in Section 6 of the PRD.
+- Real-time dashboard & role-aware navigation.
+- Product management, incl. bulk import/export and supplier/lead-time
+  linkage.
+- Operations: receipts, delivery orders, internal transfers, stock
+  adjustments, backorders, batch/expiry (FEFO) tracking.
+- Reporting & analytics: inventory valuation, movement history export,
+  supplier scorecards.
+- Notifications: low-stock, PO approvals, anomaly alerts, configurable
+  per user.
+
+THE SIX AI AGENTS (MASTRA)
+-----------------------------
+MA-01  Smart Inbound Ingestion       - parses vendor delivery docs into
+                                        a draft receipt for staff to confirm.
+MA-02  Predictive Reordering         - drafts POs from burn rate, lead
+                                        time, and backorders; manager
+                                        approves.
+MA-03  Conversational Warehouse Bot  - voice/text commands for transfers
+                                        and lookups, hands-free.
+MA-04  Anomaly & Shrinkage Auditor   - nightly scan flags suspicious
+                                        adjustment patterns (advisory only).
+MA-05  Demand Forecasting (New)      - 30/60/90-day per-SKU forecasts
+                                        feeding MA-02's safety stock.
+MA-06  Supplier Performance Scoring  - live scorecard correcting
+       (New)                          lead-time assumptions from real
+                                        receipt data.
+All agents draft; humans approve anything financial or irreversible.
+
+SECURITY & ACCESS CONTROL
+----------------------------
+- No public sign-up - accounts are invite-only, provisioned by
+  Admins/Managers.
+- Single shared login page; generic, non-enumerating error messages.
+- JWT access tokens (15 min) + rotating refresh tokens (8 hrs, or 30
+  days with "remember this device").
+- Escalating lockout after repeated failed logins; OTP-based unlock.
+- Centralized API-gateway authorization middleware enforces the RBAC
+  matrix on every request - not left to individual screens.
+- Immutable authentication/authorization audit log for Admins.
+
+SUCCESS METRICS (90 DAYS POST-LAUNCH)
+-----------------------------------------
+- Stockout rate down >=40%
+- Manual receipt entry time down >=70%
+- Shrinkage detected within <=7 days
+- 30-day demand forecast error (MAPE) <=15% for A-class SKUs
+- Voice-based warehouse tasks >=25% faster than manual UI
+- PO approval turnaround <=4 business hours
+- >=99.5% uptime, 100% offline-queue sync success
+
+RELEASE ROADMAP
+------------------
+Phase 1  Core Foundation      - full auth/authz, data models, product
+                                 catalog, manual receipts/deliveries.
+Phase 2  Operations & UI      - transfers, adjustments, backorders,
+                                 reporting/analytics, notifications.
+Phase 3  AI Core Agents       - MA-01, MA-02, MA-04 (shadow mode first).
+Phase 4  AI Advanced Agents   - MA-03, MA-05, MA-06.
+
+KEY RISKS TO WATCH
+---------------------
+- Thin historical data limits early demand forecasts (MA-05).
+- Voice misrecognition could trigger wrong transfers (MA-03).
+- Managers may over-trust/rubber-stamp AI purchase drafts (MA-02).
+- Stale supplier lead-time data compounds errors (MA-02/MA-06).
+- Multi-device offline sync conflicts risk duplicate/lost transactions.
+
+==================================================================
+For the full detail behind every item above, see
+StockSense_Requirements.txt (functional/non-functional requirements,
+RBAC matrix, data model, and phasing) and the source PRD.
+==================================================================
