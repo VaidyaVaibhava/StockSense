@@ -1,0 +1,132 @@
+================================================================================
+STOCKSENSE IMS — PROJECT CONTEXT & PROGRESS TRACKER
+================================================================================
+Last Updated: 2026-09-26
+
+================================================================================
+1. PROJECT OVERVIEW
+================================================================================
+StockSense is an AI-Powered Autonomous Inventory Management System (IMS) built 
+using the Mastra Framework. It is a full-stack Next.js 14 web application with 
+TypeScript, Tailwind CSS, and a JSON-based data store (simulating SQLite for 
+demo purposes on Windows).
+
+Target: Indian warehouse/industrial context with INR (₹) currency, Indian 
+locations, Indian supplier names, and Indian user personas.
+
+================================================================================
+2. TECH STACK
+================================================================================
+- Framework:    Next.js 14 (App Router)
+- Language:     TypeScript
+- Styling:      Tailwind CSS (Dark mode, Glassmorphism)
+- Auth:         JWT + bcryptjs (password hashing, lockout, audit trail)
+- Database:     JSON file store (data/stocksense_db.json)
+- AI Agents:    6 simulated Mastra Framework agents
+- Icons:        Lucide React
+
+================================================================================
+3. PRD SOURCE
+================================================================================
+File: StockSense_PRD_v3 (2).docx
+Extracted to: prd_extracted.txt
+
+Key PRD Sections Implemented:
+  Section 2:  System Architecture (Next.js App Router)
+  Section 4:  Data Model (Users, Products, Suppliers, Operations, Ledger)
+  Section 5:  Mastra AI Agents (MA-01 through MA-06)
+  Section 6:  Auth (JWT, bcrypt, lockout, RBAC, re-auth modal)
+  Section 7:  Dashboard & Layout
+  Section 8:  Products Catalog (CRUD, bulk import/export, filters)
+  Section 9:  Operations Hub (Receipts, Deliveries, Transfers, Adjustments)
+  Section 10: RBAC Matrix (3 roles)
+  Section 11: Analytics & Valuation
+  Section 12: Offline Mode & Sync Queue
+  Section 13: Settings & User Management
+
+================================================================================
+4. FILE STRUCTURE
+================================================================================
+StockSense/
+├── package.json
+├── tsconfig.json
+├── tailwind.config.ts
+├── postcss.config.js
+├── next.config.mjs
+├── StockSense_Context.txt    — THIS FILE
+├── data/
+│   └── stocksense_db.json    — Persistent JSON database (auto-seeded)
+├── src/
+│   ├── types/index.ts        — All TypeScript interfaces
+│   ├── lib/
+│   │   ├── db.ts             — Database layer (Indian seed data)
+│   │   ├── auth.ts           — JWT auth, bcrypt, lockout, audit
+│   │   ├── rbac.ts           — Role-based access control matrix
+│   │   └── agents/           — 6 AI agent modules
+│   ├── components/
+│   │   ├── providers/StockSenseProvider.tsx
+│   │   ├── layout/ (AppLayout, Sidebar, Header)
+│   │   └── auth/ (ReauthModal)
+│   └── app/
+│       ├── globals.css
+│       ├── layout.tsx / page.tsx
+│       ├── login/ forgot-password/ invite/
+│       ├── dashboard/ products/ operations/ agents/ analytics/ settings/
+│       └── api/v1/ (all REST endpoints)
+
+================================================================================
+5. PROGRESS LOG & VERIFICATION STATUS
+================================================================================
+
+Phase 1 — Foundation:              COMPLETED
+Phase 2 — Auth System:             COMPLETED
+Phase 3 — AI Agents Backend:       COMPLETED (All 6 Mastra Agents MA-01 to MA-06)
+Phase 4 — UI Pages & Modals:       COMPLETED
+Phase 5 — Layout & Navigation:     COMPLETED
+Phase 6 — Indian Localization:     COMPLETED
+  - Indian user names: Priya Sharma (Admin), Rajesh Kumar (Manager), Vikram Singh (Warehouse)
+  - Indian warehouses: Mumbai Distribution Hub, Delhi NCR Logistics Center, Bangalore Tech Park Facility, Chennai Port Warehouse
+  - Indian enterprise suppliers: Tata Precision Hydraulics, Bharat Electronics Ltd (BEL), Godrej Industrial Fasteners, Wipro Microelectronics
+  - Indian customer references: Tata Motors, Mahindra & Mahindra
+  - Currency: Complete INR (₹) formatting with Indian numerical commas (e.g. ₹ 7,95,830) across all UI cards, tables, modals, and notifications
+  - Minimalistic sidebar: Ultra-sleek 68px collapsed icon-only navigation with glowing emerald active indicator bar, persistant state, and quick toggle
+Phase 7 — Verification & Production Build: COMPLETED
+  - Next.js 14 production build compiled with 0 errors across all 33 routes and 20 API endpoints
+  - Automated browser subagent walkthrough executed:
+    * Login verified with Manager credentials
+    * Dashboard verified with Indian Rupee portfolio valuation and Mumbai facility selector
+    * Products catalog verified with ₹ unit costs/selling prices and Indian suppliers
+    * AI Agents hub verified with MA-01 Indian delivery challans (BEL, Tata) and MA-02 PO reorder drafts in INR
+    * Executive Analytics verified with FIFO valuation reconciliation at ₹ 7,95,830 (0.00% variance tolerance)
+
+Phase 8 — Strict Role Separation & Multi-Portal Authentication: COMPLETED
+  - Separate login gateways for Warehouse Staff, Inventory Manager, and Procurement Admin
+  - Strict portal role verification preventing cross-role privilege access
+  - Firebase Authentication ready with credentials helper and graceful offline fallback
+  - Clean, light minimalistic aesthetic tailored for frontline warehouse workers & managers
+Phase 9 — Production Build & Deployment: COMPLETED
+  - Dockerfile & .env.production configured
+  - Next.js 14 production build compiled with 0 errors across 33 routes
+  - Suspense boundary implemented for Next.js static page generation
+  - Zero liabilities verified (security lockout, input sanitization, FIFO ledger accuracy, RBAC matrix)
+  - GitHub remote linked: https://github.com/VaidyaVaibhava/StockSense.git
+
+===============================================================================
+6. DEMO CREDENTIALS
+===============================================================================
+Warehouse Floor Staff   warehouse@stocksense.io   Warehouse@12345678  (Redirects to Operations)
+Inventory Manager       manager@stocksense.io     Manager@12345678    (Redirects to Dashboard)
+Procurement Admin       admin@stocksense.io       Admin@12345678      (Redirects to Admin & Analytics)
+
+===============================================================================
+7. HOW TO RUN
+===============================================================================
+cd StockSense && npm install && npm run dev
+Open: http://localhost:3000
+
+To serve production build: npm run build && npm start
+Docker build: docker build -t stocksense . && docker run -p 3000:3000 stocksense
+To reset seed database: delete data/stocksense_db.json
+===============================================================================
+
+
