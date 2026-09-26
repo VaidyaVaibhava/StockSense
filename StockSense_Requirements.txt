@@ -1,0 +1,207 @@
+==================================================================
+STOCKSENSE - AUTONOMOUS INVENTORY MANAGEMENT SYSTEM
+REQUIREMENTS SPECIFICATION
+Derived from: StockSense PRD v3.0 (Ready for Development)
+Date: September 26, 2026
+==================================================================
+
+------------------------------------------------------------------
+1. FUNCTIONAL REQUIREMENTS
+------------------------------------------------------------------
+
+--- 1.1 Authentication & User Management ---
+FR-01  [Must]   Users sign up and log in using secure password hashing (bcrypt/argon2).
+                AC: Passwords never stored or logged in plaintext; hash + salt verified in code review.
+FR-02  [Must]   OTP-based password reset workflow via email/SMS.
+                AC: OTP expires in <=10 minutes; max 5 attempts before lockout.
+FR-03  [Must]   Post-authentication routing to role-based dashboard.
+                AC: Warehouse Staff never see financial widgets; verified via RBAC matrix (Sec 10).
+FR-03a [Should] Session timeout and forced re-auth after inactivity.
+                AC: Auto-logout after 30 min idle on financial views; 8 hours on warehouse mobile views.
+
+--- 1.2 Dashboard & Navigation ---
+FR-04  [Must]   Landing dashboard with real-time KPIs: Total Products in Stock, Low/Out of Stock,
+                Pending Receipts, Pending Deliveries, Scheduled Transfers.
+                AC: KPI tiles update within 2 seconds of an underlying transaction, no page refresh.
+FR-05  [Must]   Persistent left-hand collapsible sidebar grouped into Products, Operations,
+                Analytics, and Settings.
+                AC: Sidebar state (collapsed/expanded) persists per user across sessions.
+FR-05a [Must]   Role-aware navigation filtering.
+                AC: Analytics and Settings entries hidden or read-only for Warehouse Staff role.
+
+--- 1.3 Product Management ---
+FR-06  [Must]   Create, update, and archive products (Name, SKU/Code, Category, Unit of Measure,
+                Initial Stock, Reorder Threshold).
+                AC: Archived products hidden from operational pickers but remain in historical reports.
+FR-07  [Must]   Input validation preventing duplicate SKUs, negative stock, empty mandatory fields.
+                AC: Duplicate SKU returns a specific, actionable error, not a generic 500.
+FR-07a [Should] Bulk product import/export via CSV.
+                AC: A 500-row CSV import completes in <=5 seconds with per-row error reporting.
+FR-07b [Must]   Per-product supplier and lead-time association.
+                AC: Required so MA-02 and MA-06 have the lead-time data they depend on.
+
+--- 1.4 Operations Module ---
+FR-08  [Must]   Receipts: input supplier details and received quantities; validation increments
+                stock and logs the central ledger.
+                AC: Every stock increment traceable to a receipt ID in an immutable ledger table.
+FR-09  [Must]   Delivery Orders: picking, packing, and validation steps that decrement stock.
+                AC: Partial shipments (short-pick) supported and recorded distinctly from full fulfillment.
+FR-10  [Must]   Internal Transfers between locations without altering total inventory count.
+                AC: Transfer greater than current location stock is rejected with a clear error.
+FR-11  [Must]   Stock Adjustments reconciling recorded vs. physical counts, with mandatory reason.
+                AC: Every adjustment requires a reason code from a controlled list
+                    (damage, theft, miscount, expiry, other).
+FR-12  [Should] Backorder handling for delivery orders exceeding available stock.
+                AC: System auto-flags shortfall and links it to the Predictive Reordering Agent's queue.
+FR-13  [Should] Batch/lot and expiry-date tracking for perishable or regulated SKUs.
+                AC: FEFO (first-expiry-first-out) picking suggestion surfaces automatically during packing.
+
+--- 1.5 Reporting & Analytics ---
+FR-14  [Must]   Inventory valuation report (FIFO/weighted-average), scoped to Inventory Manager role.
+                AC: Report total reconciles with sum of per-SKU stock x unit cost within rounding tolerance.
+FR-15  [Must]   Stock movement history export (CSV/PDF) for any date range and location.
+                AC: Export of 90 days of movement history completes in <=10 seconds.
+FR-16  [Should] Supplier scorecard view (on-time rate, short-ship rate, avg lead time). Feeds MA-06.
+                AC: Scorecard recalculates nightly and on-demand.
+
+--- 1.6 Notifications ---
+FR-17  [Must]   In-app and email alerts for low-stock thresholds, pending PO approvals, anomaly flags.
+                AC: Alert latency <=60 seconds from triggering event.
+FR-18  [Should] Configurable notification preferences per user and per alert type.
+                AC: Users can mute a specific alert type without muting all notifications.
+
+--- 1.7 Authentication & Authorization: Screens, Flows & Enforcement (Section 6) ---
+FR-19  [Must]   Invite-only account provisioning; no public self-registration.
+                AC: No unauthenticated endpoint creates an account without a valid, unexpired invite token.
+FR-20  [Must]   Generic, non-enumerating error messaging on login and password-reset request.
+                AC: Response time and message content identical whether or not the email exists.
+FR-21  [Must]   Access-token / refresh-token rotation with device-scoped "remember me" extension.
+                AC: A refresh token used once cannot be replayed; reuse triggers revocation of token family.
+FR-22  [Must]   Escalating account lockout after repeated failed logins.
+                AC: Lockout thresholds/cooldowns match Section 6.5 exactly; verified via CI brute-force test.
+FR-23  [Should] Lightweight re-authentication modal on idle session expiry, preserving in-progress work.
+                AC: Re-entering password within 2 minutes of expiry resumes the same screen/state.
+FR-24  [Must]   Centralized API-gateway authorization middleware; no per-endpoint ad-hoc role checks.
+                AC: Code-review checklist + static-analysis rule fail the build if middleware is bypassed.
+FR-25  [Must]   Immutable authentication/authorization audit log, viewable by Admin.
+                AC: Log entries cannot be updated or deleted via any application-layer API; append-only.
+
+------------------------------------------------------------------
+2. AI MODULES (MASTRA-POWERED) - FUNCTIONAL SUMMARY
+------------------------------------------------------------------
+MA-01  Smart Inbound Ingestion Workflow
+       Trigger: New vendor delivery PDF/emailed packing slip.
+       Output: Draft Receipt (Pending Validation); human confirms before posting to ledger.
+
+MA-02  Predictive Reordering Agent
+       Trigger: Continuous + event-driven (Delivery Order / Stock Adjustment).
+       Output: Draft purchase order queued for managerial sign-off (never auto-executes).
+
+MA-03  Conversational Warehouse Assistant
+       Trigger: Staff voice/text command on mobile device.
+       Output: Executed transfer (with confirmation above threshold) or spoken/text answer.
+
+MA-04  Inventory Anomaly & Shrinkage Auditor
+       Trigger: Nightly batch + rolling 30-day pattern scan.
+       Output: Advisory flagged report only; no automated punitive action.
+
+MA-05  Demand Forecasting & Seasonal Trend Agent (New)
+       Trigger: Weekly scheduled + on-demand.
+       Output: 30/60/90-day demand forecast per SKU feeding MA-02's safety-stock calc.
+
+MA-06  Supplier Performance Scoring Agent (New)
+       Trigger: Recalculates after every validated Receipt vs. its PO.
+       Output: Live supplier scorecard (on-time %, short-ship %, lead-time variance) -> FR-16.
+
+------------------------------------------------------------------
+3. NON-FUNCTIONAL REQUIREMENTS
+------------------------------------------------------------------
+NFR-01 Performance          Page load / API response <=1.5 seconds; UI fluid across
+                            desktop, tablet, mobile.
+NFR-02 Security             TLS 1.2+ in transit; AES-256 at rest; RBAC restricting financial
+                            dashboards; zero cross-role data leaks in pen-test.
+NFR-03 Offline Resilience   Local SQLite / service-worker caching; 100% of queued
+                            transactions sync without data loss on reconnect.
+NFR-04 Code Quality         All imported snippets/external libraries reviewed and tested
+                            locally; no unreviewed third-party code merged to main.
+NFR-05 Observability (New)  Structured logging/tracing for every Mastra agent decision;
+                            100% of agent actions traceable to an audit log entry with
+                            reasoning summary.
+NFR-06 Data Retention (New) Ledger and audit data retained per compliance policy; PII
+                            minimized in agent memory; retention enforced at DB layer.
+
+------------------------------------------------------------------
+4. SECURITY & RBAC MATRIX (Section 10)
+------------------------------------------------------------------
+Capability                                   | Inv. Manager | Warehouse Staff | Procurement/Admin
+----------------------------------------------------------------------------------------------
+View financial valuation reports (FR-14)     | Full         | None            | Full
+Approve/reject AI purchase drafts (MA-02)    | Full         | None            | View only
+Execute receipts/transfers/adjustments       | Full         | Full            | View only
+Manage supplier records & lead times (FR-07b)| View only    | None            | Full
+View supplier scorecards (FR-16 / MA-06)     | Full         | None            | Full
+Use Conversational Assistant (MA-03)         | Full         | Full            | View only
+Manage user accounts & roles                 | None         | None            | Full
+
+------------------------------------------------------------------
+5. DATA MODEL - KEY ENTITIES (Section 8)
+------------------------------------------------------------------
+User               : id, email, password_hash, role, warehouse_scope
+Product            : id, sku, name, category, uom, reorder_threshold, supplier_id
+Supplier           : id, name, avg_lead_time_days, on_time_rate, short_ship_rate
+Receipt            : id, supplier_id, status, source (manual/MA-01), line_items[]
+DeliveryOrder      : id, customer_ref, status, line_items[], backorder_flag
+InternalTransfer   : id, from_location, to_location, sku, quantity, initiated_via
+StockAdjustment    : id, sku, delta, reason_code, flagged_by_MA04
+PurchaseOrderDraft : id, sku, recommended_qty, status, source_agent
+StockLedger        : id, sku, event_type, quantity_delta, resulting_balance, timestamp
+                     (immutable, append-only)
+AuthAuditLog       : id, user_id, event_type, ip_device_fingerprint, outcome, timestamp
+                     (immutable, append-only)
+
+------------------------------------------------------------------
+6. SUCCESS METRICS / KPIs (Section 2 - 90 days post-launch)
+------------------------------------------------------------------
+- Stockout rate                          : reduce by >=40% vs. pre-launch baseline
+- Manual receipt data-entry time         : reduce by >=70%
+- Mean time to detect shrinkage pattern  : <=7 days from onset
+- Forecast error (MAPE), 30-day demand   : <=15% for A-class SKUs
+- Warehouse task completion (voice)      : >=25% faster for transfer tasks
+- Purchase-order approval turnaround     : <=4 business hours
+- System uptime / offline recovery       : >=99.5% uptime / 100% queued-transaction sync
+
+------------------------------------------------------------------
+7. TECH STACK (Section 4)
+------------------------------------------------------------------
+Frontend        : Next.js (React) + Tailwind CSS
+Backend         : FastAPI (Python) preferred, or Node.js (TypeScript) end-to-end
+Database        : PostgreSQL (Docker locally / Supabase staging-prod) via Prisma or SQLAlchemy
+Real-time Layer : PostgreSQL LISTEN/NOTIFY or Supabase Realtime channels
+AI Orchestration: Mastra SDK (agents, memory, workflows, tool-calling; per-warehouse scoped memory)
+Local Cache     : SQLite (mobile/warehouse) or service-worker cache (web)
+Authentication  : JWT sessions + refresh tokens; OTP via Twilio/SendGrid-type provider
+
+------------------------------------------------------------------
+8. MVP RELEASE PHASING (Section 14)
+------------------------------------------------------------------
+Phase 1 - Core Foundation        : Full auth/authz surface (FR-01-03a, FR-19-25, Sec 6 & 10),
+                                    PostgreSQL data models, Product Catalog CRUD (FR-06/07/07b),
+                                    manual Receipt/Delivery tracking (FR-08/09).
+Phase 2 - Operations & UI Polish : Transfers (FR-10), adjustments (FR-11), backorders (FR-12),
+                                    responsive layout, Reporting & Analytics (FR-14-16),
+                                    Notifications (FR-17-18).
+Phase 3 - AI Core Agents         : MA-01, MA-02, MA-04 (shadow mode first, then gated live rollout).
+Phase 4 - AI Advanced Agents     : MA-03, MA-05, MA-06.
+
+------------------------------------------------------------------
+9. KEY RISKS (Section 15)
+------------------------------------------------------------------
+- Insufficient historical data for MA-05 on new SKUs -> fallback to category-level averages.
+- Voice misrecognition in MA-03 causing incorrect transfer -> confirmation step + audit log.
+- Over-reliance on AI purchase drafts -> surface reasoning/confidence score with every draft.
+- Stale/mis-entered supplier lead-time data -> MA-06 continuously corrects from receipt data.
+- Offline multi-device sync conflicts -> idempotency keys + last-write-wins with conflict log.
+
+==================================================================
+END OF REQUIREMENTS SPECIFICATION
+==================================================================
